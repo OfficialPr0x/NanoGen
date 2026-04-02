@@ -68,7 +68,7 @@ export const Layout = ({
             className="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer hover:scale-110 transition-transform overflow-hidden"
           >
             <img 
-              src="https://res.cloudinary.com/dpfapm0tl/image/upload/v1775160488/nanogen-wo5ldaxn7_nxyr1k.png" 
+              src="https://res.cloudinary.com/dpfapm0tl/image/upload/v1775169465/ChatGPT_Image_Apr_2_2026_06_24_34_PM_y2mc6w.png" 
               alt="NanoGen Logo" 
               className="w-full h-full object-contain"
               referrerPolicy="no-referrer"
@@ -177,7 +177,7 @@ export const Layout = ({
         <div className="flex items-center gap-2" onClick={() => setActiveTab('home')}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
             <img 
-              src="https://res.cloudinary.com/dpfapm0tl/image/upload/v1775160488/nanogen-wo5ldaxn7_nxyr1k.png" 
+              src="https://res.cloudinary.com/dpfapm0tl/image/upload/v1775169465/ChatGPT_Image_Apr_2_2026_06_24_34_PM_y2mc6w.png" 
               alt="NanoGen Logo" 
               className="w-full h-full object-contain"
               referrerPolicy="no-referrer"
@@ -217,7 +217,7 @@ export const Layout = ({
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
                   <img 
-                    src="https://res.cloudinary.com/dpfapm0tl/image/upload/v1775160488/nanogen-wo5ldaxn7_nxyr1k.png" 
+                    src="https://res.cloudinary.com/dpfapm0tl/image/upload/v1775169465/ChatGPT_Image_Apr_2_2026_06_24_34_PM_y2mc6w.png" 
                     alt="NanoGen Logo" 
                     className="w-full h-full object-contain"
                     referrerPolicy="no-referrer"

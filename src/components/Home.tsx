@@ -76,7 +76,7 @@ export const Home = ({ onNavigate }: HomeProps) => {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/50 border border-zinc-800 text-zinc-400 text-xs font-medium mb-8 backdrop-blur-sm">
               <div className="w-4 h-4 rounded-md overflow-hidden flex items-center justify-center">
                 <img 
-                  src="https://res.cloudinary.com/dpfapm0tl/image/upload/v1775160488/nanogen-wo5ldaxn7_nxyr1k.png" 
+                  src="https://res.cloudinary.com/dpfapm0tl/image/upload/v1775169465/ChatGPT_Image_Apr_2_2026_06_24_34_PM_y2mc6w.png" 
                   alt="NanoGen Logo" 
                   className="w-full h-full object-contain"
                   referrerPolicy="no-referrer"
