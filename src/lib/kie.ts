@@ -8,10 +8,10 @@ export interface KieVideoParams {
   apiKey: string;
 }
 
+const MAX_POLL_ATTEMPTS = 120; // ~10 minutes at 5s intervals
+const POLL_INTERVAL_MS = 5000;
+
 export async function generateKieVideo({ prompt, aspectRatio, resolution, apiKey }: KieVideoParams) {
-  // Kie.ai API typically follows an OpenAI-like structure or a custom one.
-  // Based on common patterns for these wrappers:
-  
   const response = await fetch('/api/kie/v1/video/generations', {
     method: 'POST',
     headers: {
@@ -19,44 +19,72 @@ export async function generateKieVideo({ prompt, aspectRatio, resolution, apiKey
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'veo-3.1-lite', // or the specific model ID from Kie
+      model: 'veo-3.1-lite',
       prompt,
       aspect_ratio: aspectRatio,
       resolution,
-      // Add other Kie-specific params if needed
     })
   });
 
+  if (response.status === 429) {
+    throw new Error('Rate limit exceeded. KIE allows up to 20 requests per 10 seconds. Please wait and try again.');
+  }
+
+  if (response.status === 401) {
+    throw new Error('Authentication failed. Please check your KIE API key in Settings.');
+  }
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || `Kie API error: ${response.status}`);
+    throw new Error(error.msg || error.message || `KIE API error: ${response.status}`);
   }
 
   const data = await response.json();
-  
-  // Kie usually returns a task ID or a direct URL
-  // If it's a task ID, we'd need to poll. 
-  // For this implementation, we'll assume it returns a result or we poll if needed.
-  
+
+  // KIE uses an async task model — HTTP 200 only means the task was created.
+  // The response contains a task_id that must be polled for the final result.
+  const taskId = data.task_id || data.id;
+
   if (data.url) return data.url;
-  
-  if (data.id) {
-    // Polling logic for Kie
-    let status = 'pending';
-    let resultUrl = '';
-    
-    while (status !== 'completed' && status !== 'failed') {
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      const pollRes = await fetch(`/api/kie/v1/video/generations/${data.id}`, {
-        headers: { 'Authorization': `Bearer ${apiKey}` }
-      });
-      const pollData = await pollRes.json();
-      status = pollData.status;
-      if (status === 'completed') resultUrl = pollData.url;
-      if (status === 'failed') throw new Error(pollData.error || 'Generation failed');
-    }
-    return resultUrl;
+
+  if (!taskId) {
+    throw new Error('Unexpected response from KIE API: no task_id returned');
   }
 
-  throw new Error('Unexpected response from Kie API');
+  let attempts = 0;
+  while (attempts < MAX_POLL_ATTEMPTS) {
+    attempts++;
+    await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+
+    const pollRes = await fetch(`/api/kie/v1/video/generations/${taskId}`, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!pollRes.ok) {
+      if (pollRes.status === 429) {
+        // Back off on rate limit during polling
+        await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS * 2));
+        continue;
+      }
+      throw new Error(`KIE polling error: ${pollRes.status}`);
+    }
+
+    const pollData = await pollRes.json();
+    const status = pollData.status;
+
+    if (status === 'completed' || status === 'success') {
+      const resultUrl = pollData.url || pollData.result?.url || pollData.output?.url;
+      if (resultUrl) return resultUrl;
+      throw new Error('Task completed but no media URL found in response');
+    }
+
+    if (status === 'failed' || status === 'error') {
+      throw new Error(pollData.error || pollData.msg || 'Video generation failed');
+    }
+  }
+
+  throw new Error('Video generation timed out. Check task status at https://kie.ai/logs');
 }

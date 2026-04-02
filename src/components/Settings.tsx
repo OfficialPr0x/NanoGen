@@ -83,9 +83,6 @@ export const Settings = () => {
     setErrorMessage('');
 
     try {
-      // Kie.ai typically uses an OpenAI-compatible or similar REST API
-      // We'll try a simple models list or a health check if available
-      // For now, we'll simulate a request to their endpoint
       const response = await fetch('/api/kie/v1/models', {
         method: 'GET',
         headers: {
@@ -96,6 +93,12 @@ export const Settings = () => {
 
       if (response.ok) {
         setTestResult('success');
+      } else if (response.status === 401) {
+        setTestResult('error');
+        setErrorMessage('Invalid API key. Get a valid key at https://kie.ai/api-key');
+      } else if (response.status === 429) {
+        setTestResult('error');
+        setErrorMessage('Rate limited. Please wait a moment and try again.');
       } else {
         const data = await response.json().catch(() => ({}));
         setTestResult('error');
