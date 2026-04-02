@@ -9,19 +9,19 @@ import {
   ChevronRight,
   Info,
   Zap,
-  Square,
   RectangleHorizontal,
   RectangleVertical,
   Monitor,
   Smartphone,
   Play,
   Clock,
-  X
+  X,
+  Wand2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { generateVideo, type AspectRatio, type VideoResolution } from '../lib/gemini';
-import { generateKieVideo, type VideoModel } from '../lib/kie';
+import { generateVideo, type VideoResolution } from '../lib/gemini';
+import { generateKieVideo, type VideoModel, type AspectRatio } from '../lib/kie';
 
 interface GeneratedVideo {
   id: string;
@@ -34,9 +34,12 @@ interface GeneratedVideo {
 }
 
 const VIDEO_MODELS: { label: string; value: VideoModel; provider: string; tag?: string }[] = [
+  { label: 'Veo 3.1 Quality', value: 'veo3', provider: 'Google Veo', tag: 'Best' },
+  { label: 'Veo 3.1 Fast', value: 'veo3_fast', provider: 'Google Veo', tag: 'Popular' },
+  { label: 'Veo 3.1 Lite', value: 'veo3_lite', provider: 'Google Veo', tag: 'Cheap' },
   { label: 'Kling v2.1 Pro', value: 'kling-v2.1-pro', provider: 'Kling' },
   { label: 'Kling v2.5', value: 'kling-v2.5', provider: 'Kling', tag: 'New' },
-  { label: 'Sora 2 Pro', value: 'sora-2-pro', provider: 'Sora', tag: 'Popular' },
+  { label: 'Sora 2 Pro', value: 'sora-2-pro', provider: 'Sora' },
   { label: 'Bytedance v1 Pro', value: 'bytedance-v1-pro', provider: 'Bytedance' },
   { label: 'Bytedance v1 Lite', value: 'bytedance-v1-lite', provider: 'Bytedance', tag: 'Fast' },
   { label: 'Hailuo 2.3 Pro', value: 'hailuo-2.3-pro', provider: 'Hailuo' },
@@ -46,9 +49,9 @@ const VIDEO_MODELS: { label: string; value: VideoModel; provider: string; tag?: 
 ];
 
 const ASPECT_RATIOS: { label: string; value: AspectRatio; icon: React.ElementType }[] = [
-  { label: 'Square', value: '1:1', icon: Square },
   { label: 'Landscape', value: '16:9', icon: RectangleHorizontal },
   { label: 'Portrait', value: '9:16', icon: RectangleVertical },
+  { label: 'Auto', value: 'Auto', icon: Wand2 },
 ];
 
 const RESOLUTIONS: { label: string; value: VideoResolution; icon: React.ElementType }[] = [
@@ -58,7 +61,7 @@ const RESOLUTIONS: { label: string; value: VideoResolution; icon: React.ElementT
 
 export const VideoGenerator = () => {
   const [prompt, setPrompt] = useState('');
-  const [model, setModel] = useState<VideoModel>('kling-v2.1-pro');
+  const [model, setModel] = useState<VideoModel>('veo3_fast');
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
   const [resolution, setResolution] = useState<VideoResolution>('720p');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -307,7 +310,7 @@ export const VideoGenerator = () => {
                         exit={{ opacity: 0, scale: 0.9 }}
                         className={cn(
                           "relative rounded-2xl bg-zinc-900/50 border border-zinc-800 overflow-hidden flex flex-col items-center justify-center gap-4",
-                          aspectRatio === '1:1' ? 'aspect-square' : aspectRatio === '9:16' ? 'aspect-[9/16]' : 'aspect-video'
+                          aspectRatio === '9:16' ? 'aspect-[9/16]' : 'aspect-video'
                         )}
                       >
                         <div className="relative">
@@ -329,7 +332,7 @@ export const VideoGenerator = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         className={cn(
                           "group relative rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden cursor-pointer transition-all duration-300 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/10",
-                          vid.aspectRatio === '1:1' ? 'aspect-square' : vid.aspectRatio === '9:16' ? 'aspect-[9/16]' : 'aspect-video'
+                          vid.aspectRatio === '9:16' ? 'aspect-[9/16]' : 'aspect-video'
                         )}
                         onClick={() => setSelectedVideo(vid)}
                       >
