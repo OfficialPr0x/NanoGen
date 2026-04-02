@@ -1,25 +1,36 @@
 export type AspectRatio = "1:1" | "9:16" | "16:9";
 export type VideoResolution = "720p" | "1080p";
+export type VideoModel =
+  | 'kling-v2.1-pro'
+  | 'kling-v2.5'
+  | 'sora-2-pro'
+  | 'bytedance-v1-pro'
+  | 'bytedance-v1-lite'
+  | 'hailuo-2.3-pro'
+  | 'wan-2.6'
+  | 'wan-2.6-turbo'
+  | 'grok-video';
 
 export interface KieVideoParams {
   prompt: string;
   aspectRatio: AspectRatio;
   resolution: VideoResolution;
+  model: VideoModel;
   apiKey: string;
 }
 
 const MAX_POLL_ATTEMPTS = 120; // ~10 minutes at 5s intervals
 const POLL_INTERVAL_MS = 5000;
 
-export async function generateKieVideo({ prompt, aspectRatio, resolution, apiKey }: KieVideoParams) {
-  const response = await fetch('/api/kie/v1/video/generations', {
+export async function generateKieVideo({ prompt, aspectRatio, resolution, model, apiKey }: KieVideoParams) {
+  const response = await fetch('/api/kie/api/v1/jobs/createTask', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'veo-3.1-lite',
+      model,
       prompt,
       aspect_ratio: aspectRatio,
       resolution,
@@ -56,7 +67,7 @@ export async function generateKieVideo({ prompt, aspectRatio, resolution, apiKey
     attempts++;
     await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
 
-    const pollRes = await fetch(`/api/kie/v1/video/generations/${taskId}`, {
+    const pollRes = await fetch(`/api/kie/api/v1/jobs/recordInfo?taskId=${encodeURIComponent(taskId)}`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'

@@ -83,7 +83,7 @@ export const Settings = () => {
     setErrorMessage('');
 
     try {
-      const response = await fetch('/api/kie/v1/models', {
+      const response = await fetch('/api/kie/api/v1/chat/credit', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${kieApiKey}`,

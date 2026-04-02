@@ -21,7 +21,7 @@ import {
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { generateVideo, type AspectRatio, type VideoResolution } from '../lib/gemini';
-import { generateKieVideo } from '../lib/kie';
+import { generateKieVideo, type VideoModel } from '../lib/kie';
 
 interface GeneratedVideo {
   id: string;
@@ -29,8 +29,21 @@ interface GeneratedVideo {
   prompt: string;
   aspectRatio: AspectRatio;
   resolution: VideoResolution;
+  model: VideoModel;
   timestamp: number;
 }
+
+const VIDEO_MODELS: { label: string; value: VideoModel; provider: string; tag?: string }[] = [
+  { label: 'Kling v2.1 Pro', value: 'kling-v2.1-pro', provider: 'Kling' },
+  { label: 'Kling v2.5', value: 'kling-v2.5', provider: 'Kling', tag: 'New' },
+  { label: 'Sora 2 Pro', value: 'sora-2-pro', provider: 'Sora', tag: 'Popular' },
+  { label: 'Bytedance v1 Pro', value: 'bytedance-v1-pro', provider: 'Bytedance' },
+  { label: 'Bytedance v1 Lite', value: 'bytedance-v1-lite', provider: 'Bytedance', tag: 'Fast' },
+  { label: 'Hailuo 2.3 Pro', value: 'hailuo-2.3-pro', provider: 'Hailuo' },
+  { label: 'Wan 2.6', value: 'wan-2.6', provider: 'Wan' },
+  { label: 'Wan 2.6 Turbo', value: 'wan-2.6-turbo', provider: 'Wan', tag: 'Fast' },
+  { label: 'Grok Video', value: 'grok-video', provider: 'Grok' },
+];
 
 const ASPECT_RATIOS: { label: string; value: AspectRatio; icon: React.ElementType }[] = [
   { label: 'Square', value: '1:1', icon: Square },
@@ -45,6 +58,7 @@ const RESOLUTIONS: { label: string; value: VideoResolution; icon: React.ElementT
 
 export const VideoGenerator = () => {
   const [prompt, setPrompt] = useState('');
+  const [model, setModel] = useState<VideoModel>('kling-v2.1-pro');
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
   const [resolution, setResolution] = useState<VideoResolution>('720p');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -69,6 +83,7 @@ export const VideoGenerator = () => {
         prompt,
         aspectRatio,
         resolution,
+        model,
         apiKey: kieApiKey
       });
 
@@ -78,6 +93,7 @@ export const VideoGenerator = () => {
         prompt,
         aspectRatio,
         resolution,
+        model,
         timestamp: Date.now(),
       };
 
@@ -105,7 +121,7 @@ export const VideoGenerator = () => {
         <div className="flex items-center gap-2 text-sm">
           <span className="text-zinc-500">Generation</span>
           <ChevronRight className="w-4 h-4 text-zinc-700" />
-          <span className="text-zinc-200 font-medium">Motion Generation (Veo 3)</span>
+          <span className="text-zinc-200 font-medium">Motion Generation ({VIDEO_MODELS.find(m => m.value === model)?.label || model})</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold">
@@ -124,6 +140,37 @@ export const VideoGenerator = () => {
             </div>
             
             <div className="space-y-6">
+              <div>
+                <label className="text-xs font-medium text-zinc-500 block mb-3">Model</label>
+                <div className="space-y-1.5 max-h-52 overflow-y-auto scrollbar-hide">
+                  {VIDEO_MODELS.map((m) => (
+                    <button
+                      key={m.value}
+                      onClick={() => setModel(m.value)}
+                      className={cn(
+                        "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-left transition-all duration-200",
+                        model === m.value
+                          ? "bg-purple-600/10 border-purple-500/50 text-purple-400"
+                          : "bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
+                      )}
+                    >
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold block truncate">{m.label}</span>
+                        <span className="text-[10px] text-zinc-600">{m.provider}</span>
+                      </div>
+                      {m.tag && (
+                        <span className={cn(
+                          "shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase",
+                          m.tag === 'Popular' ? 'bg-amber-500/10 text-amber-400' :
+                          m.tag === 'New' ? 'bg-emerald-500/10 text-emerald-400' :
+                          'bg-blue-500/10 text-blue-400'
+                        )}>{m.tag}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label className="text-xs font-medium text-zinc-500 block mb-3">Aspect Ratio</label>
                 <div className="grid grid-cols-3 gap-2">
@@ -178,7 +225,7 @@ export const VideoGenerator = () => {
                   <span className="text-xs font-bold">Estimated Time</span>
                 </div>
                 <p className="text-[10px] text-zinc-500 leading-relaxed">
-                  Video generation with Veo 3 typically takes 30-60 seconds depending on complexity.
+                  Video generation typically takes 30-120 seconds depending on model and complexity.
                 </p>
               </div>
             </div>
