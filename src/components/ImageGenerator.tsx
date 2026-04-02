@@ -20,7 +20,7 @@ import {
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { generateImage, type AspectRatio } from '../lib/gemini';
-import { generateKieImage, type ImageModel } from '../lib/kie';
+import { generateKieImage, type ImageModel, type TaskProgress } from '../lib/kie';
 
 interface GeneratedImage {
   id: string;
@@ -59,6 +59,7 @@ export const ImageGenerator = () => {
   const [model, setModel] = useState<ImageModel>('gemini');
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('1:1');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [progressStatus, setProgressStatus] = useState<TaskProgress | null>(null);
   const [images, setImages] = useState<GeneratedImage[]>([]);
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -70,6 +71,7 @@ export const ImageGenerator = () => {
 
     setIsGenerating(true);
     setErrorMessage(null);
+    setProgressStatus(model === 'gemini' ? { stage: 'processing', message: 'Generating with Gemini...' } : { stage: 'submitting', message: 'Preparing request...' });
     try {
       let imageUrl: string;
 
@@ -89,6 +91,7 @@ export const ImageGenerator = () => {
           aspectRatio,
           model,
           apiKey: kieApiKey,
+          onProgress: setProgressStatus,
         });
       }
 
@@ -116,6 +119,7 @@ export const ImageGenerator = () => {
       setErrorMessage(error instanceof Error ? error.message : 'Image generation failed.');
     } finally {
       setIsGenerating(false);
+      setProgressStatus(null);
     }
   };
 
@@ -364,9 +368,21 @@ export const ImageGenerator = () => {
                           <div className="w-12 h-12 rounded-full border-2 border-purple-500/20 border-t-purple-500 animate-spin" />
                           <Sparkles className="absolute inset-0 m-auto w-5 h-5 text-purple-400 animate-pulse" />
                         </div>
-                        <div className="text-center">
-                          <p className="text-xs font-bold text-zinc-400">Dreaming up your image...</p>
-                          <p className="text-[10px] text-zinc-600 mt-1">This usually takes 5-10 seconds</p>
+                        <div className="text-center px-4">
+                          <p className="text-xs font-bold text-zinc-400">
+                            {progressStatus?.stage === 'submitting' && 'Submitting task...'}
+                            {progressStatus?.stage === 'queued' && 'Queued — waiting for server...'}
+                            {progressStatus?.stage === 'processing' && 'Generating your image...'}
+                            {!progressStatus && 'Dreaming up your image...'}
+                          </p>
+                          <p className="text-[10px] text-zinc-500 mt-1.5">
+                            {progressStatus?.message || 'This usually takes 5-10 seconds'}
+                          </p>
+                          {progressStatus?.taskId && (
+                            <p className="text-[9px] text-zinc-700 mt-2 font-mono truncate max-w-[200px]">
+                              Task: {progressStatus.taskId}
+                            </p>
+                          )}
                         </div>
                       </motion.div>
                     )}

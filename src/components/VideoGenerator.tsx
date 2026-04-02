@@ -21,7 +21,7 @@ import {
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { generateVideo, type VideoResolution } from '../lib/gemini';
-import { generateKieVideo, type VideoModel, type AspectRatio } from '../lib/kie';
+import { generateKieVideo, type VideoModel, type AspectRatio, type TaskProgress } from '../lib/kie';
 
 interface GeneratedVideo {
   id: string;
@@ -65,6 +65,7 @@ export const VideoGenerator = () => {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
   const [resolution, setResolution] = useState<VideoResolution>('720p');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [progressStatus, setProgressStatus] = useState<TaskProgress | null>(null);
   const [videos, setVideos] = useState<GeneratedVideo[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<GeneratedVideo | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -80,6 +81,7 @@ export const VideoGenerator = () => {
 
     setIsGenerating(true);
     setErrorMessage(null);
+    setProgressStatus({ stage: 'submitting', message: 'Preparing request...' });
     try {
       // Use Kie API for video generation
       const videoUrl = await generateKieVideo({
@@ -87,7 +89,8 @@ export const VideoGenerator = () => {
         aspectRatio,
         resolution,
         model,
-        apiKey: kieApiKey
+        apiKey: kieApiKey,
+        onProgress: setProgressStatus,
       });
 
       const newVideo: GeneratedVideo = {
@@ -115,6 +118,7 @@ export const VideoGenerator = () => {
       setErrorMessage(error instanceof Error ? error.message : 'Video generation failed. Please check your API key.');
     } finally {
       setIsGenerating(false);
+      setProgressStatus(null);
     }
   };
 
@@ -309,7 +313,7 @@ export const VideoGenerator = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
                         className={cn(
-                          "relative rounded-2xl bg-zinc-900/50 border border-zinc-800 overflow-hidden flex flex-col items-center justify-center gap-4",
+                          "relative rounded-2xl bg-zinc-900/50 border border-zinc-800 overflow-hidden flex flex-col items-center justify-center gap-4 p-6",
                           aspectRatio === '9:16' ? 'aspect-[9/16]' : 'aspect-video'
                         )}
                       >
@@ -317,9 +321,26 @@ export const VideoGenerator = () => {
                           <div className="w-12 h-12 rounded-full border-2 border-purple-500/20 border-t-purple-500 animate-spin" />
                           <VideoIcon className="absolute inset-0 m-auto w-5 h-5 text-purple-400 animate-pulse" />
                         </div>
-                        <div className="text-center px-6">
-                          <p className="text-xs font-bold text-zinc-400">Processing your video...</p>
-                          <p className="text-[10px] text-zinc-600 mt-1">Veo 3 is rendering your cinematic masterpiece. Please wait.</p>
+                        <div className="text-center px-4">
+                          <p className="text-xs font-bold text-zinc-400">
+                            {progressStatus?.stage === 'submitting' && 'Submitting task...'}
+                            {progressStatus?.stage === 'queued' && 'Queued — waiting for server...'}
+                            {progressStatus?.stage === 'processing' && 'Generating your video...'}
+                            {!progressStatus && 'Processing your video...'}
+                          </p>
+                          <p className="text-[10px] text-zinc-500 mt-1.5">
+                            {progressStatus?.message || 'Please wait...'}
+                          </p>
+                          {progressStatus?.taskId && (
+                            <p className="text-[9px] text-zinc-700 mt-2 font-mono truncate max-w-[200px]">
+                              Task: {progressStatus.taskId}
+                            </p>
+                          )}
+                          {progressStatus?.elapsed != null && progressStatus.elapsed > 30 && (
+                            <p className="text-[10px] text-amber-500/70 mt-1">
+                              Video generation can take 1-3 minutes
+                            </p>
+                          )}
                         </div>
                       </motion.div>
                     )}
