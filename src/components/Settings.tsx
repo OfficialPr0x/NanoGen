@@ -18,8 +18,10 @@ import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const Settings = () => {
+  const [geminiApiKey, setGeminiApiKey] = useState('');
   const [kieApiKey, setKieApiKey] = useState('');
   const [uploadPostApiKey, setUploadPostApiKey] = useState('');
+  const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showKey, setShowKey] = useState(false);
   const [showUploadKey, setShowUploadKey] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -30,13 +32,16 @@ export const Settings = () => {
   const [uploadErrorMessage, setUploadErrorMessage] = useState('');
 
   useEffect(() => {
+    const savedGeminiKey = localStorage.getItem('gemini_api_key');
     const savedKieKey = localStorage.getItem('kie_api_key');
     const savedUploadKey = localStorage.getItem('upload_post_api_key');
+    if (savedGeminiKey) setGeminiApiKey(savedGeminiKey);
     if (savedKieKey) setKieApiKey(savedKieKey);
     if (savedUploadKey) setUploadPostApiKey(savedUploadKey);
   }, []);
 
   const handleSave = () => {
+    localStorage.setItem('gemini_api_key', geminiApiKey);
     localStorage.setItem('kie_api_key', kieApiKey);
     localStorage.setItem('upload_post_api_key', uploadPostApiKey);
     alert('Settings saved successfully!');
@@ -81,7 +86,7 @@ export const Settings = () => {
       // Kie.ai typically uses an OpenAI-compatible or similar REST API
       // We'll try a simple models list or a health check if available
       // For now, we'll simulate a request to their endpoint
-      const response = await fetch('https://api.kie.ai/v1/models', {
+      const response = await fetch('/api/kie/v1/models', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${kieApiKey}`,
@@ -123,7 +128,66 @@ export const Settings = () => {
         </div>
 
         <div className="space-y-8">
-          {/* API Configuration */}
+          {/* Gemini API Configuration */}
+          <section className="p-8 rounded-3xl bg-zinc-900/30 border border-zinc-800/50 backdrop-blur-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">Gemini API</h2>
+                <p className="text-xs text-zinc-500">Required for image generation. Get a key from Google AI Studio.</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3 block">
+                  Gemini API Key
+                </label>
+                <div className="relative">
+                  <input
+                    type={showGeminiKey ? "text" : "password"}
+                    value={geminiApiKey}
+                    onChange={(e) => setGeminiApiKey(e.target.value)}
+                    placeholder="AIza..."
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 pr-12 text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-emerald-500/50 transition-all"
+                  />
+                  <button 
+                    onClick={() => setShowGeminiKey(!showGeminiKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-zinc-600 hover:text-zinc-400 transition-colors"
+                  >
+                    {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="mt-3 text-[10px] text-zinc-600 flex items-center gap-1.5">
+                  <Shield className="w-3 h-3" />
+                  Your key is stored locally in your browser and never sent to our servers.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 pt-2">
+                <button
+                  onClick={handleSave}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white text-black font-bold text-sm hover:bg-zinc-200 transition-all"
+                >
+                  <Save className="w-4 h-4" />
+                  Save Changes
+                </button>
+                <a 
+                  href="https://aistudio.google.com/apikey" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 ml-auto"
+                >
+                  Get API Key
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+          </section>
+
+          {/* Kie API Configuration */}
           <section className="p-8 rounded-3xl bg-zinc-900/30 border border-zinc-800/50 backdrop-blur-sm">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">

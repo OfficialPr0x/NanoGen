@@ -17,7 +17,8 @@ export interface VideoGenerationParams {
 }
 
 export async function generateImage({ prompt, aspectRatio, image, mimeType }: GenerationParams) {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+  const apiKey = process.env.GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || "";
+  const ai = new GoogleGenAI({ apiKey });
   
   const contents = {
     parts: [
@@ -46,7 +47,7 @@ export async function generateImage({ prompt, aspectRatio, image, mimeType }: Ge
 }
 
 export async function generateVideo({ prompt, aspectRatio, resolution }: VideoGenerationParams) {
-  const apiKey = process.env.GEMINI_API_KEY || "";
+  const apiKey = process.env.GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || "";
   const ai = new GoogleGenAI({ apiKey });
 
   let operation = await ai.models.generateVideos({

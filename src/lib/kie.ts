@@ -12,7 +12,7 @@ export async function generateKieVideo({ prompt, aspectRatio, resolution, apiKey
   // Kie.ai API typically follows an OpenAI-like structure or a custom one.
   // Based on common patterns for these wrappers:
   
-  const response = await fetch('https://api.kie.ai/v1/video/generations', {
+  const response = await fetch('/api/kie/v1/video/generations', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -47,7 +47,7 @@ export async function generateKieVideo({ prompt, aspectRatio, resolution, apiKey
     
     while (status !== 'completed' && status !== 'failed') {
       await new Promise(resolve => setTimeout(resolve, 5000));
-      const pollRes = await fetch(`https://api.kie.ai/v1/video/generations/${data.id}`, {
+      const pollRes = await fetch(`/api/kie/v1/video/generations/${data.id}`, {
         headers: { 'Authorization': `Bearer ${apiKey}` }
       });
       const pollData = await pollRes.json();

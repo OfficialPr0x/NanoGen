@@ -7,7 +7,7 @@ export interface UploadPostParams {
 }
 
 export async function createPost({ apiKey, caption, platforms, mediaUrls, scheduledAt }: UploadPostParams) {
-  const response = await fetch('https://api.upload-post.com/v1/posts', {
+  const response = await fetch('/api/upload-post/v1/posts', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -31,7 +31,7 @@ export async function createPost({ apiKey, caption, platforms, mediaUrls, schedu
 
 export async function testUploadPostConnection(apiKey: string) {
   // Using a more robust endpoint to test connection
-  const response = await fetch('https://api.upload-post.com/v1/posts?limit=1', {
+  const response = await fetch('/api/upload-post/v1/posts?limit=1', {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
