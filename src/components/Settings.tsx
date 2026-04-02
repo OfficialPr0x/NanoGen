@@ -120,7 +120,7 @@ export const Settings = () => {
             <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center">
               <img 
                 src="https://res.cloudinary.com/dpfapm0tl/image/upload/v1775169465/ChatGPT_Image_Apr_2_2026_06_24_34_PM_y2mc6w.png" 
-                alt="NanoGen Logo" 
+                alt="Mystic Marv Logo" 
                 className="w-full h-full object-contain"
                 referrerPolicy="no-referrer"
               />

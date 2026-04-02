@@ -348,7 +348,7 @@ export const ImageGenerator = () => {
                   </div>
                   <h2 className="text-xl font-bold text-zinc-300 mb-2">Start Creating</h2>
                   <p className="text-zinc-500 max-w-sm">
-                    Enter a prompt above and watch your imagination come to life with NanoGen AI.
+                    Enter a prompt above and watch your imagination come to life with Mystic Marv AI.
                   </p>
                 </div>
               ) : (

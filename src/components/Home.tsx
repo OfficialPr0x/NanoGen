@@ -77,7 +77,7 @@ export const Home = ({ onNavigate }: HomeProps) => {
               <div className="w-4 h-4 rounded-md overflow-hidden flex items-center justify-center">
                 <img 
                   src="https://res.cloudinary.com/dpfapm0tl/image/upload/v1775169465/ChatGPT_Image_Apr_2_2026_06_24_34_PM_y2mc6w.png" 
-                  alt="NanoGen Logo" 
+                  alt="Mystic Marv Logo" 
                   className="w-full h-full object-contain"
                   referrerPolicy="no-referrer"
                 />
@@ -197,7 +197,7 @@ export const Home = ({ onNavigate }: HomeProps) => {
 
               <div className="p-4 rounded-2xl bg-black/40 border border-white/5">
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Upgrade to <span className="text-white font-bold">NanoGen Pro</span> for unlimited generations, 4K video, and priority processing.
+                  Upgrade to <span className="text-white font-bold">Mystic Marv Pro</span> for unlimited generations, 4K video, and priority processing.
                 </p>
                 <button className="w-full mt-4 py-3 rounded-xl bg-purple-600 text-white text-xs font-bold hover:bg-purple-500 transition-colors">
                   Upgrade Now

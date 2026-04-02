@@ -69,14 +69,14 @@ export const Layout = ({
           >
             <img 
               src="https://res.cloudinary.com/dpfapm0tl/image/upload/v1775169465/ChatGPT_Image_Apr_2_2026_06_24_34_PM_y2mc6w.png" 
-              alt="NanoGen Logo" 
+              alt="Mystic Marv Logo" 
               className="w-full h-full object-contain"
               referrerPolicy="no-referrer"
             />
           </div>
           {isSidebarOpen && (
             <span className="text-xl font-display tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
-              NanoGen AI
+              Mystic Marv AI
             </span>
           )}
         </div>
@@ -178,12 +178,12 @@ export const Layout = ({
           <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
             <img 
               src="https://res.cloudinary.com/dpfapm0tl/image/upload/v1775169465/ChatGPT_Image_Apr_2_2026_06_24_34_PM_y2mc6w.png" 
-              alt="NanoGen Logo" 
+              alt="Mystic Marv Logo" 
               className="w-full h-full object-contain"
               referrerPolicy="no-referrer"
             />
           </div>
-          <span className="font-display text-lg tracking-wider">NanoGen</span>
+          <span className="font-display text-lg tracking-wider">Mystic Marv</span>
         </div>
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-zinc-400">
           {isSidebarOpen ? <X /> : <Menu />}
@@ -218,12 +218,12 @@ export const Layout = ({
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
                   <img 
                     src="https://res.cloudinary.com/dpfapm0tl/image/upload/v1775169465/ChatGPT_Image_Apr_2_2026_06_24_34_PM_y2mc6w.png" 
-                    alt="NanoGen Logo" 
+                    alt="Mystic Marv Logo" 
                     className="w-full h-full object-contain"
                     referrerPolicy="no-referrer"
                   />
                 </div>
-                <span className="text-xl font-display tracking-wider">NanoGen AI</span>
+                <span className="text-xl font-display tracking-wider">Mystic Marv AI</span>
               </div>
               <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-zinc-400">
                 <X />
