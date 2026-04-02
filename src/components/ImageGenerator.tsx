@@ -20,14 +20,33 @@ import {
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { generateImage, type AspectRatio } from '../lib/gemini';
+import { generateKieImage, type ImageModel } from '../lib/kie';
 
 interface GeneratedImage {
   id: string;
   url: string;
   prompt: string;
   aspectRatio: AspectRatio;
+  model: ImageModel;
   timestamp: number;
 }
+
+const IMAGE_MODELS: { label: string; value: ImageModel; provider: string; tag?: string }[] = [
+  { label: 'Gemini Flash', value: 'gemini', provider: 'Google', tag: 'Default' },
+  { label: 'Seedream', value: 'seedream', provider: 'Seedream' },
+  { label: 'Z-Image', value: 'z-image', provider: 'Z-Image' },
+  { label: 'Google Imagen', value: 'google-imagen', provider: 'Google' },
+  { label: 'Flux-2', value: 'flux2', provider: 'Flux' },
+  { label: 'Grok Imagine', value: 'grok-imagine', provider: 'xAI' },
+  { label: 'GPT Image', value: 'gpt-image', provider: 'OpenAI', tag: 'Popular' },
+  { label: 'Topaz', value: 'topaz', provider: 'Topaz' },
+  { label: 'Recraft', value: 'recraft', provider: 'Recraft' },
+  { label: 'Ideogram', value: 'ideogram', provider: 'Ideogram' },
+  { label: 'Qwen', value: 'qwen', provider: 'Alibaba' },
+  { label: '4o Image', value: '4o-image', provider: 'OpenAI', tag: 'New' },
+  { label: 'Flux Kontext', value: 'flux-kontext', provider: 'Flux', tag: 'New' },
+  { label: 'Wan', value: 'wan-image', provider: 'Wan' },
+];
 
 const ASPECT_RATIOS: { label: string; value: AspectRatio; icon: React.ElementType }[] = [
   { label: 'Square', value: '1:1', icon: Square },
@@ -37,29 +56,48 @@ const ASPECT_RATIOS: { label: string; value: AspectRatio; icon: React.ElementTyp
 
 export const ImageGenerator = () => {
   const [prompt, setPrompt] = useState('');
+  const [model, setModel] = useState<ImageModel>('gemini');
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('1:1');
   const [isGenerating, setIsGenerating] = useState(false);
   const [images, setImages] = useState<GeneratedImage[]>([]);
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
 
     setIsGenerating(true);
+    setErrorMessage(null);
     try {
-      const imageUrl = await generateImage({
-        prompt,
-        aspectRatio,
-        image: uploadedImage?.split(',')[1], // remove data:image/png;base64,
-      });
+      let imageUrl: string;
+
+      if (model === 'gemini') {
+        imageUrl = await generateImage({
+          prompt,
+          aspectRatio,
+          image: uploadedImage?.split(',')[1],
+        });
+      } else {
+        const kieApiKey = localStorage.getItem('kie_api_key');
+        if (!kieApiKey) {
+          throw new Error('KIE API key is missing. Please go to Settings to add your key.');
+        }
+        imageUrl = await generateKieImage({
+          prompt,
+          aspectRatio,
+          model,
+          apiKey: kieApiKey,
+        });
+      }
 
       const newImage: GeneratedImage = {
         id: Math.random().toString(36).substr(2, 9),
         url: imageUrl,
         prompt,
         aspectRatio,
+        model,
         timestamp: Date.now(),
       };
 
@@ -75,7 +113,7 @@ export const ImageGenerator = () => {
 
     } catch (error) {
       console.error('Generation failed:', error);
-      // In a real app, show a toast
+      setErrorMessage(error instanceof Error ? error.message : 'Image generation failed.');
     } finally {
       setIsGenerating(false);
     }
@@ -108,7 +146,7 @@ export const ImageGenerator = () => {
         <div className="flex items-center gap-2 text-sm">
           <span className="text-zinc-500">Generation</span>
           <ChevronRight className="w-4 h-4 text-zinc-700" />
-          <span className="text-zinc-200 font-medium">Image Generation</span>
+          <span className="text-zinc-200 font-medium">Image Generation ({IMAGE_MODELS.find(m => m.value === model)?.label || 'Gemini'})</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold">
@@ -128,6 +166,38 @@ export const ImageGenerator = () => {
             </div>
             
             <div className="space-y-6">
+              <div>
+                <label className="text-xs font-medium text-zinc-500 block mb-3">Model</label>
+                <div className="space-y-1.5 max-h-52 overflow-y-auto scrollbar-hide">
+                  {IMAGE_MODELS.map((m) => (
+                    <button
+                      key={m.value}
+                      onClick={() => setModel(m.value)}
+                      className={cn(
+                        "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-left transition-all duration-200",
+                        model === m.value
+                          ? "bg-purple-600/10 border-purple-500/50 text-purple-400"
+                          : "bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
+                      )}
+                    >
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold block truncate">{m.label}</span>
+                        <span className="text-[10px] text-zinc-600">{m.provider}</span>
+                      </div>
+                      {m.tag && (
+                        <span className={cn(
+                          "shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase",
+                          m.tag === 'Popular' ? 'bg-amber-500/10 text-amber-400' :
+                          m.tag === 'Default' ? 'bg-emerald-500/10 text-emerald-400' :
+                          m.tag === 'New' ? 'bg-blue-500/10 text-blue-400' :
+                          'bg-zinc-500/10 text-zinc-400'
+                        )}>{m.tag}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label className="text-xs font-medium text-zinc-500 block mb-3">Aspect Ratio</label>
                 <div className="grid grid-cols-3 gap-2">
@@ -214,6 +284,21 @@ export const ImageGenerator = () => {
           {/* Prompt Input Area */}
           <div className="p-6 border-b border-zinc-800/50 bg-[#0d0d0d]/30">
             <div className="max-w-4xl mx-auto relative">
+              <AnimatePresence>
+                {errorMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium flex items-center justify-between"
+                  >
+                    <span>{errorMessage}</span>
+                    <button onClick={() => setErrorMessage(null)} className="p-1 hover:bg-red-500/10 rounded-lg">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <div className="relative group">
                 <textarea
                   value={prompt}

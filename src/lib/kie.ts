@@ -96,11 +96,16 @@ export async function generateKieVideo({ prompt, aspectRatio, resolution, model,
     throw new Error(result.msg || `KIE API error: ${response.status}`);
   }
 
-  // Extract task ID — Veo nests under data.taskId, unified API may use task_id or id
-  const taskId = result.data?.taskId || result.task_id || result.id;
+  // Extract task ID from response — different endpoints nest it differently
+  const taskId = result.data?.taskId
+    || result.data?.task_id
+    || result.data?.id
+    || result.task_id
+    || result.taskId
+    || result.id;
 
   if (!taskId) {
-    throw new Error('Unexpected response from KIE API: no taskId returned');
+    throw new Error(`KIE API: no taskId in response. Response: ${JSON.stringify(result).slice(0, 300)}`);
   }
 
   // Poll recordInfo until completion
@@ -126,13 +131,24 @@ export async function generateKieVideo({ prompt, aspectRatio, resolution, model,
 
     const pollData = await pollRes.json();
 
-    // Handle Veo callback-style response nested in polling
-    const code = pollData.code ?? pollData.status;
-    const info = pollData.data?.info || pollData.info;
+    // The API may return null/empty data while the task is still queued
+    if (!pollData || pollData.data === null || pollData.data === undefined) {
+      continue; // Still processing — keep polling
+    }
 
-    if (code === 200 || code === 'completed' || code === 'success') {
+    const code = pollData.code ?? pollData.data?.status ?? pollData.status;
+    const info = pollData.data?.info || pollData.info;
+    const taskStatus = pollData.data?.status || pollData.status;
+
+    // Check for terminal success states
+    const isSuccess = code === 200
+      || taskStatus === 'completed'
+      || taskStatus === 'success'
+      || taskStatus === 'done';
+
+    if (isSuccess && info) {
       // Veo returns resultUrls as a JSON-encoded string array
-      if (info?.resultUrls) {
+      if (info.resultUrls) {
         try {
           const urls = typeof info.resultUrls === 'string'
             ? JSON.parse(info.resultUrls)
@@ -143,20 +159,175 @@ export async function generateKieVideo({ prompt, aspectRatio, resolution, model,
           return info.resultUrls;
         }
       }
-      // Fallbacks for unified API format
-      const url = pollData.url || pollData.result?.url || pollData.output?.url
-        || pollData.data?.url || pollData.data?.result?.url;
+      // Fallbacks for other response formats
+      const url = info.url || info.videoUrl || info.video_url;
       if (url) return url;
-      throw new Error('Task completed but no video URL found in response');
     }
 
+    if (isSuccess) {
+      // Success code but info might be at a different path
+      const url = pollData.url || pollData.data?.url || pollData.data?.videoUrl
+        || pollData.result?.url || pollData.output?.url || pollData.data?.result?.url;
+      if (url) return url;
+      // code 200 but no info yet — might still be processing, continue polling
+      continue;
+    }
+
+    // Check for terminal failure states
     if (code === 400 || code === 422 || code === 500 || code === 501
-        || code === 'failed' || code === 'error') {
-      throw new Error(pollData.msg || pollData.error || 'Video generation failed');
+        || taskStatus === 'failed' || taskStatus === 'error') {
+      throw new Error(pollData.msg || pollData.data?.msg || pollData.error || 'Video generation failed');
     }
 
     // Still processing — continue polling
   }
 
   throw new Error('Video generation timed out. Check task status at https://kie.ai/logs');
+}
+
+// --- Image Generation ---
+
+export type ImageModel =
+  | 'gemini'          // Local Gemini — not routed through KIE
+  | 'seedream'
+  | 'z-image'
+  | 'google-imagen'
+  | 'flux2'
+  | 'grok-imagine'
+  | 'gpt-image'
+  | 'topaz'
+  | 'recraft'
+  | 'ideogram'
+  | 'qwen'
+  | '4o-image'
+  | 'flux-kontext'
+  | 'wan-image';
+
+export type ImageAspectRatio = '1:1' | '9:16' | '16:9';
+
+export interface KieImageParams {
+  prompt: string;
+  aspectRatio: ImageAspectRatio;
+  model: ImageModel;
+  apiKey: string;
+  imageUrls?: string[];
+}
+
+const IMAGE_POLL_INTERVAL_MS = 3000;
+const IMAGE_MAX_POLL_ATTEMPTS = 100; // ~5 minutes
+
+export async function generateKieImage({ prompt, aspectRatio, model, apiKey, imageUrls }: KieImageParams) {
+  const response = await fetch('/api/kie/api/v1/jobs/createTask', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model,
+      prompt,
+      aspect_ratio: aspectRatio,
+      ...(imageUrls?.length ? { imageUrls } : {}),
+    })
+  });
+
+  if (response.status === 429) {
+    throw new Error('Rate limit exceeded. Please wait and try again.');
+  }
+  if (response.status === 401) {
+    throw new Error('Authentication failed. Please check your KIE API key in Settings.');
+  }
+
+  const result = await response.json().catch(() => ({}));
+
+  if (result.code && result.code !== 200) {
+    const errorMap: Record<number, string> = {
+      402: 'Insufficient credits. Top up at https://kie.ai/pricing',
+      422: result.msg || 'Request validation failed',
+      455: 'KIE service is under maintenance. Try again later.',
+      501: 'Image generation failed',
+      505: 'This feature is currently disabled',
+    };
+    throw new Error(errorMap[result.code] || result.msg || `KIE API error: ${result.code}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(result.msg || `KIE API error: ${response.status}`);
+  }
+
+  const taskId = result.data?.taskId
+    || result.data?.task_id
+    || result.data?.id
+    || result.task_id
+    || result.taskId
+    || result.id;
+
+  if (!taskId) {
+    throw new Error(`KIE API: no taskId in response. Response: ${JSON.stringify(result).slice(0, 300)}`);
+  }
+
+  let attempts = 0;
+  while (attempts < IMAGE_MAX_POLL_ATTEMPTS) {
+    attempts++;
+    await new Promise(resolve => setTimeout(resolve, IMAGE_POLL_INTERVAL_MS));
+
+    const pollRes = await fetch(`/api/kie/api/v1/jobs/recordInfo?taskId=${encodeURIComponent(taskId)}`, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!pollRes.ok) {
+      if (pollRes.status === 429) {
+        await new Promise(resolve => setTimeout(resolve, IMAGE_POLL_INTERVAL_MS * 2));
+        continue;
+      }
+      throw new Error(`KIE polling error: ${pollRes.status}`);
+    }
+
+    const pollData = await pollRes.json();
+
+    if (!pollData || pollData.data === null || pollData.data === undefined) {
+      continue;
+    }
+
+    const code = pollData.code ?? pollData.data?.status ?? pollData.status;
+    const info = pollData.data?.info || pollData.info;
+    const taskStatus = pollData.data?.status || pollData.status;
+
+    const isSuccess = code === 200
+      || taskStatus === 'completed'
+      || taskStatus === 'success'
+      || taskStatus === 'done';
+
+    if (isSuccess && info) {
+      if (info.resultUrls) {
+        try {
+          const urls = typeof info.resultUrls === 'string'
+            ? JSON.parse(info.resultUrls)
+            : info.resultUrls;
+          if (Array.isArray(urls) && urls.length > 0) return urls[0];
+        } catch {
+          return info.resultUrls;
+        }
+      }
+      const url = info.url || info.imageUrl || info.image_url;
+      if (url) return url;
+    }
+
+    if (isSuccess) {
+      const url = pollData.url || pollData.data?.url || pollData.data?.imageUrl
+        || pollData.result?.url || pollData.output?.url || pollData.data?.result?.url;
+      if (url) return url;
+      continue;
+    }
+
+    if (code === 400 || code === 422 || code === 500 || code === 501
+        || taskStatus === 'failed' || taskStatus === 'error') {
+      throw new Error(pollData.msg || pollData.data?.msg || pollData.error || 'Image generation failed');
+    }
+  }
+
+  throw new Error('Image generation timed out. Check task status at https://kie.ai/logs');
 }
